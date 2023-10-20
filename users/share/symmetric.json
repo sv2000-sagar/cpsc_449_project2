@@ -1,0 +1,10 @@
+{
+    "keys": [
+        {
+            "alg": "RS256",
+            "k": "ry43m8SprYTOTV-SIqEdaUaMoI3N_CedNhgPJ4jKZoRxub3_1_phDKDFGCsipHTKTZjT5EGRibHDQOUmhBN6ESdNjcwoZjpQwR98o5QxUNk6Hk0YTQOtHgKYM1PjbeYjTGLJlr1hIK8afr8lPor0TBY8Cv4b81LtDSRxhaJfPdC0lWRYWo20ZPi6Js3_fiC5ad8LflzX5ABPcWGAGKDmvm48zh7IkvZrJ-TO98GQAHMFDy_-4zojWjI3DO-uX4NfVM1AySDx50fbdRxFcERa1h-fJJxP1s22pXgkZCYp90Ln7SSVD5Y0BSCajG98vaAXFB5b5J6SjRh8rvLZG82bDA",
+            "kid": "SECRETKEY",
+            "kty": "oct"
+        }
+    ]
+}

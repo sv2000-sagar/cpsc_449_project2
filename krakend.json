@@ -1,0 +1,166 @@
+{
+    "$schema": "https://www.krakend.io/schema/v2.4/krakend.json",
+    "version": 3,
+    "extra_config": {
+        "router": {
+            "return_error_msg": true
+        }
+    },
+    "endpoints": [
+        {
+    "@comment": "Register new user Endpoint" ,
+            "endpoint": "/api/register",
+            "method": "POST",
+            "backend": [
+                {
+                "url_pattern": "/register",
+                "method": "POST",
+                "host": [
+                    "http://localhost:5000"
+                ],
+                "extra_config": {
+                    "backend/http": {
+                        "return_error_details": "backend_alias"
+                    }
+                }
+                }
+            ]
+        },
+        {
+    "@comment": "Login Endpoint" ,
+            "endpoint": "/api/login",
+            "method": "POST",
+            "extra_config": {
+                "auth/signer": {
+                  "alg": "HS256",
+                  "kid": "SECRETKEY",
+                  "keys_to_sign": ["access_token", "refresh_token"],
+                  "jwk_local_path": "users/share/symmetric.json",
+                  "disable_jwk_security": true
+                }
+              },
+            "backend": [
+              {
+                "url_pattern": "/login",
+                "method": "POST",
+                "host": ["http://localhost:5000"],
+                "extra_config": {
+                    "backend/http": {
+                        "return_error_details": "backend_alias"
+                    }
+                }
+              }
+              
+            ]
+            
+        },
+        {
+    "@comment": "List Available Students" ,
+            "endpoint": "/api/classes",
+            "method": "GET",
+            "extra_config": {
+                "auth/validator": {
+                    "alg": "HS256",
+                    "jwk_local_path": "users/share/symmetric.json",
+                    "roles": ["student"],
+                    "roles_key": "roles",
+                    "disable_jwk_security": true   
+                }
+            },
+            "backend": [
+                {
+                "url_pattern": "/classes",
+                "method": "GET",
+                "host": [
+                    "http://localhost:5100"
+                ],
+                "extra_config": {
+                    "backend/http": {
+                        "return_error_details": "backend_alias"
+                    }
+                }
+                }
+            ]
+            },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        {
+            "endpoint": "/api/users/",
+            "method": "GET",
+            "backend": [
+                {
+                "url_pattern": "/users/",
+                "method": "GET",
+                "host": [
+                    "http://localhost:5000"
+                ],
+                "extra_config": {
+                    "backend/http": {
+                        "return_error_details": "backend_alias"
+                    }
+                }
+                }
+            ]
+            },
+            {
+                "endpoint": "/api/classes/{id}",
+                "method": "GET",
+                "backend": [
+                    {
+                    "url_pattern": "/books/{id}",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5000"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                    }
+                ]
+                },
+                {
+                    "endpoint": "/api/books/search",
+                    "method": "GET",
+                    "backend": [
+                        {
+                        "url_pattern": "/search",
+                        "method": "GET",
+                        "host": [
+                            "http://localhost:5000"
+                        ],
+                        "extra_config": {
+                            "backend/http": {
+                                "return_error_details": "backend_alias"
+                            }
+                        }
+                        }
+                    ],
+                    "input_query_strings": ["author","published","title","first_sentence"]
+                    }
+    ]
+}

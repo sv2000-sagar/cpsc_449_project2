@@ -1,0 +1,2 @@
+[2023-10-17 16:18:12,098] DEBUG in users: SELECT * FROM users
+[2023-10-17 16:18:15,218] DEBUG in users: SELECT * FROM users
