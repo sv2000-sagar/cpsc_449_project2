@@ -4,12 +4,36 @@ import logging.config
 import sqlite3
 import datetime
 from typing import Optional
-from fastapi import FastAPI, Depends, Response, HTTPException, status
+from fastapi import FastAPI, Depends, Response, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
+import jwt
+
+
+"""
+Helper Functions
+"""
+
+def decode_jwt(request: Request):
+    token_from_header = request.headers.get('Authorization')
+    token = token_from_header[7:] # Removing Bearer
+    try:
+        payload = jwt.decode(token, options={"verify_signature": False})
+        return payload
+    except jwt.ExpiredSignatureError:
+        # Handle token expiration
+        return None
+    except jwt.DecodeError:
+        # Handle token decoding error
+        return None
+
+async def get_current_user(request: Request, token: str = Depends(decode_jwt)):
+    if token is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
+
 
 class Enrollment(BaseModel):
-    StudentId: int
     ClassId: int
 
 class Class(BaseModel):
@@ -45,21 +69,24 @@ STUDENTS API ENDPOINTS
 
 # List available classses to students
 @app.get("/classes", status_code=status.HTTP_200_OK)
-def list_available_classes(db: sqlite3.Connection = Depends(get_db)):
+def list_available_classes(db: sqlite3.Connection = Depends(get_db), current_user=Depends(get_current_user)):
     classes = db.execute("""
                          SELECT 
                          ClassId,
                          CourseCode,
                          SectionNumber,
                          ClassName,                         
-                         instructors.FirstName || ', ' || instructors.LastName as instructor,
+                         InstructorName,
                          CurrentEnrollment,
                          MaxEnrollment
                          FROM classes 
-                         JOIN Instructors
-                         ON classes.InstructorId = Instructors.InstructorId
                          WHERE CurrentEnrollment < MaxEnrollment 
                          AND AutomaticEnrollmentFrozen = 0""")
+    # print({"user_info": current_user})
+    username, fullName, roles = current_user.get("sub"), current_user.get("name"), current_user.get("roles")
+    print(username)
+    print(fullName)
+    print(roles)
     if not classes:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Classes not found"
@@ -70,8 +97,11 @@ def list_available_classes(db: sqlite3.Connection = Depends(get_db)):
 # Attempt to enroll in a class
 @app.post("/enrollments/", status_code=status.HTTP_201_CREATED)
 def create_enrollment(
-    enrollment: Enrollment, response: Response, db: sqlite3.Connection = Depends(get_db)
+    enrollment: Enrollment, response: Response, db: sqlite3.Connection = Depends(get_db), current_user=Depends(get_current_user)
 ):
+    # Current User Info
+    username, fullName = current_user.get("sub"), current_user.get("name")
+    print(username)
     cur = db.execute("select CurrentEnrollment, MaxEnrollment, AutomaticEnrollmentFrozen from Classes where ClassId = ?",[enrollment.ClassId])
     # checking if class exists
     entry = cur.fetchone()
@@ -81,14 +111,15 @@ def create_enrollment(
                 detail= 'Class Does Not Exist',
             )
     currentEnrollment, maxEnrollment, automaticEnrollmentFrozen = entry
-    # checking if student exist
-    cur = db.execute("Select * from Students where StudentId = ?",[enrollment.StudentId])
-    entry = cur.fetchone()
-    if(not entry):
-        raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail= 'Student Does Not Exist',
-            )
+    # # checking if student exist
+    # cur = db.execute("Select * from Students where StudentId = ?",[enrollment.StudentId])
+    # entry = cur.fetchone()
+    # if(not entry):
+    #     raise HTTPException(
+    #             status_code=status.HTTP_404_NOT_FOUND,
+    #             detail= 'Student Does Not Exist',
+    #         )
+
     # Checking if enrollment frozen is on
     if(automaticEnrollmentFrozen==1):
         raise HTTPException(
@@ -97,7 +128,7 @@ def create_enrollment(
             )
 
     # Checking if student is Already enrolled to the course
-    cur = db.execute("Select * from Enrollments where ClassId = ? and  StudentId = ? and dropped = 0",[enrollment.ClassId, enrollment.StudentId])
+    cur = db.execute("Select * from Enrollments where ClassId = ? and  StudentUsername = ? and dropped = 0",[enrollment.ClassId, username])
     sameClasses = cur.fetchall()
     if(sameClasses):
         raise HTTPException(status_code=409, detail="You are already enrolled") #HTTP status code 409, which stands for "Conflict." 
@@ -106,13 +137,13 @@ def create_enrollment(
     if(currentEnrollment >= maxEnrollment):
 
         # Checking if student is already on waitList
-        cur = db.execute("Select * from WaitingLists where ClassId = ? and  StudentId = ?",[enrollment.ClassId, enrollment.StudentId])
+        cur = db.execute("Select * from WaitingLists where ClassId = ? and  StudentUsername = ?",[enrollment.ClassId, username])
         alreadyOnWaitlist = cur.fetchall()
         if(alreadyOnWaitlist):
             raise HTTPException(status_code=409, detail="You are already on waitlist") #HTTP status code 409, which stands for "Conflict." 
 
         # Checking that student is not on more than 3 waitlist (not checked)
-        cur = db.execute("Select * from Waitinglists where StudentId = ?",[enrollment.StudentId])
+        cur = db.execute("Select * from Waitinglists where StudentUsername = ?",[username])
         moreThanThree = cur.fetchall()
         if(len(moreThanThree)>3):
             raise HTTPException(status_code=409, detail="Class is full and You are already on three waitlists so, you can't be placed on a waitlist") #HTTP status code 409, which stands for "Conflict." 
@@ -127,10 +158,10 @@ def create_enrollment(
         try:
             cur = db.execute(
                 """
-                INSERT INTO WaitingLists(StudentID,ClassID,WaitingListPos,DateAdded)
-                VALUES(?, ?, ? , datetime('now')) 
+                INSERT INTO WaitingLists(StudentUserName,StudentName,ClassID,WaitingListPos,DateAdded)
+                VALUES(?,?, ?, ? , datetime('now')) 
                 """,
-                [enrollment.StudentId,enrollment.ClassId,waitListPosition]
+                [username,fullName,enrollment.ClassId,waitListPosition]
             )
             db.commit()
         except sqlite3.IntegrityError as e:
@@ -145,14 +176,14 @@ def create_enrollment(
         raise HTTPException(status_code=400, detail=message)
     
     # Checking if student was enrolled earlier
-    cur = db.execute("Select * from Enrollments where ClassId = ? and  StudentId = ?",[enrollment.ClassId, enrollment.StudentId])
+    cur = db.execute("Select * from Enrollments where ClassId = ? and  StudentUserName = ?",[enrollment.ClassId, username])
     entry = cur.fetchone()
     if(entry):
         try:
             db.execute("""
-                    UPDATE Enrollments SET dropped = 0 where ClassId = ? and StudentId = ?
+                    UPDATE Enrollments SET dropped = 0 where ClassId = ? and StudentUserName = ?
                     """,
-                    [enrollment.ClassId,enrollment.StudentId]) 
+                    [enrollment.ClassId,username]) 
             db.execute("""
                     UPDATE Classes SET CurrentEnrollment = ? where ClassId = ? 
                     """,
@@ -171,12 +202,11 @@ def create_enrollment(
         try:
             cur = db.execute(
                 """
-                INSERT INTO enrollments(StudentId,ClassID,EnrollmentDate)
-                VALUES(:StudentId, :ClassId, datetime('now')) 
+                INSERT INTO enrollments(StudentUserName,StudentName,ClassID,EnrollmentDate)
+                VALUES(?,?,?, datetime('now')) 
                 """,
-                e,
+                [username,fullName,enrollment.ClassId],
             )
-            # db.commit()
             # Updating currentEnrollment
             cur = db.execute("UPDATE Classes SET currentEnrollment = ? where ClassId = ?",[(currentEnrollment+1),enrollment.ClassId])
             db.commit()

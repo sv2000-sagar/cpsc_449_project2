@@ -1,11 +1,6 @@
 {
     "$schema": "https://www.krakend.io/schema/v2.4/krakend.json",
     "version": 3,
-    "extra_config": {
-        "router": {
-            "return_error_msg": true
-        }
-    },
     "endpoints": [
         {
     "@comment": "Register new user Endpoint" ,
@@ -55,8 +50,11 @@
             
         },
         {
-    "@comment": "List Available Students" ,
+    "@comment": "List Available Classes" ,
             "endpoint": "/api/classes",
+            "input_headers":[
+                "authorization"
+            ],
             "method": "GET",
             "extra_config": {
                 "auth/validator": {
@@ -82,6 +80,38 @@
                 }
             ]
             },
+            {
+                "@comment": "Enroll for Classes" ,
+                        "endpoint": "/api/enrollments",
+                        "input_headers":[
+                            "authorization"
+                        ],
+                        "method": "POST",
+                        "extra_config": {
+                            "auth/validator": {
+                                "alg": "HS256",
+                                "jwk_local_path": "users/share/symmetric.json",
+                                "roles": ["student"],
+                                "roles_key": "roles",
+                                "disable_jwk_security": true   
+                            }
+                        },
+                        "backend": [
+                            {
+                            "url_pattern": "/enrollments/",
+                            "method": "POST",
+                            "host": [
+                                "http://localhost:5100"
+                            ],
+                            "extra_config": {
+                                "backend/http": {
+                                    "return_error_details": "backend_alias"
+                                }
+                            }
+                            }
+                        ]
+                        },
+            
 
 
 
