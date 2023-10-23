@@ -37,16 +37,18 @@ class Enrollment(BaseModel):
     ClassId: int
 
 class Class(BaseModel):
-    InstructorId: int
+    InstructorUserName: str
+    InstructorName: str
     Department: str
+    ClassName: str
     CourseCode: str
     SectionNumber: int
-    ClassName: str
     MaxEnrollment: int = 40
     AutomaticEnrollmentFrozen: int = 0
 
 class UpdateInstructor(BaseModel):
-    InstructorId: int
+    InstructorUserName: str
+    InstructorName: str
 
 app = FastAPI()
 
@@ -220,28 +222,22 @@ def create_enrollment(
         return {"success":e}
 
 # Delete enrollment of student
-@app.delete("/students/{StudentId}/enrollments/{ClassId}",status_code=status.HTTP_200_OK)
+@app.delete("/students/enrollments/{ClassId}",status_code=status.HTTP_200_OK)
 def drop_enrollment(
-    StudentId:int, ClassId:int , db: sqlite3.Connection = Depends(get_db)
+    ClassId:int , db: sqlite3.Connection = Depends(get_db), current_user=Depends(get_current_user)
 ):
+    # Current User Info
+    username, fullName = current_user.get("sub"), current_user.get("name")
+    print(username)
     cur = db.execute("select CurrentEnrollment, MaxEnrollment, AutomaticEnrollmentFrozen from Classes where ClassId = ?",[ClassId])
     entries = cur.fetchone()
     # check if class exists
     if(not entries):
         raise HTTPException(status_code=404, detail="Class does not exist")
     currentEnrollment, maxEnrollment, automaticEnrollmentFrozen = entries
-
-    # checking if student exist
-    cur = db.execute("Select * from Students where StudentId = ?",[StudentId])
-    entry = cur.fetchone()
-    if(not entry):
-        raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail= 'Student Does Not Exist',
-            )
     
     # Checking if student was enrolled to the course
-    cur = db.execute("Select * from Enrollments where ClassId = ? and  StudentId = ? and dropped = 0",[ClassId, StudentId])
+    cur = db.execute("Select * from Enrollments where ClassId = ? and  StudentUserName = ? and dropped = 0",[ClassId, username])
     entries = cur.fetchone()
     if(not entries):
         raise HTTPException(status_code=404, detail="You are not enrolled in this course") #student enrollement not found
@@ -250,9 +246,9 @@ def drop_enrollment(
     # dropping the course
     try:
         db.execute("""
-                    UPDATE Enrollments SET dropped = 1 where ClassId = ? and StudentId = ?
+                    UPDATE Enrollments SET dropped = 1 where ClassId = ? and StudentUserName = ?
                     """,
-                    [ClassId,StudentId]) 
+                    [ClassId,username]) 
         db.execute("""
                     UPDATE Classes SET CurrentEnrollment = ? where ClassId = ? 
                     """,
@@ -270,19 +266,19 @@ def drop_enrollment(
 
         # Enrolling student who is on top of the waitlist
                 # Checking if student was enrolled to that course earlier
-        cur = db.execute("Select * from Enrollments where ClassId = ? and  StudentId = ?",[ClassId, entry['StudentId']])
+        cur = db.execute("Select * from Enrollments where ClassId = ? and  StudentUserName = ?",[ClassId, entry['StudentUserName']])
         enrollment_entry = cur.fetchone()
         if(enrollment_entry):
             try:
-                cur = db.execute("UPDATE Enrollments SET dropped = 0 where ClassId = ? and StudentId = ?",[ClassId, entry['StudentId']])
+                cur = db.execute("UPDATE Enrollments SET dropped = 0 where ClassId = ? and StudentUserName = ?",[ClassId, entry['StudentUserName']])
                 db.execute("""
                         UPDATE Classes SET CurrentEnrollment = ? where ClassId = ? 
                         """,
                         [(currentEnrollment),ClassId])
                 db.execute("""
-                            DELETE FROM WaitingLists WHERE StudentId = ? and ClassId= ? 
+                            DELETE FROM WaitingLists WHERE StudentUserName = ? and ClassId= ? 
                             """,
-                            [entry['StudentId'],ClassId])
+                            [entry['StudentUserName'],ClassId])
                 
                 db.commit()
             except sqlite3.IntegrityError as e:
@@ -294,15 +290,15 @@ def drop_enrollment(
             try:
                 cur = db.execute(
                 """
-                INSERT INTO enrollments(StudentId,ClassID,EnrollmentDate)
-                VALUES(?, ?, datetime('now')) 
+                INSERT INTO enrollments(StudentUserName, StudentName,ClassID,EnrollmentDate)
+                VALUES(?,?, ?, datetime('now')) 
                 """,
-                [entry['StudentId'], ClassId],
+                [entry['StudentUserName'], fullName, ClassId],
             )
                 db.execute("""
-                            DELETE FROM WaitingLists WHERE StudentId = ? and ClassId= ? 
+                            DELETE FROM WaitingLists WHERE StudentUserName = ? and ClassId= ? 
                             """,
-                            [entry['StudentId'],ClassId])
+                            [entry['StudentUserName'],ClassId])
                 db.execute("""
                         UPDATE Classes SET CurrentEnrollment = ? where ClassId = ? 
                         """,
@@ -339,18 +335,12 @@ def drop_enrollment(
             }
 
 # View Waiting List Position
-@app.get("/students/{StudentId}/waiting-list/{ClassId}",status_code=status.HTTP_200_OK)
+@app.get("/students/waiting-list/{ClassId}",status_code=status.HTTP_200_OK)
 def retrieve_waitinglist_position(
-    StudentId: int, ClassId: int, db: sqlite3.Connection = Depends(get_db)
+    ClassId: int, db: sqlite3.Connection = Depends(get_db), current_user=Depends(get_current_user)
 ):
-    # checking if student exist
-    cur = db.execute("Select * from Students where StudentId = ?",[StudentId])
-    entry = cur.fetchone()
-    if(not entry):
-        raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail= 'Student Does Not Exist',
-            )
+    # Current User Info
+    username, fullName = current_user.get("sub"), current_user.get("name")
     # checking if class exist
     cur = db.execute("Select * from classes where ClassId = ?",[ClassId])
     entry = cur.fetchone()
@@ -359,24 +349,38 @@ def retrieve_waitinglist_position(
                 status_code=status.HTTP_409_CONFLICT,
                 detail= 'Class Does Not Exist',
             )
-    # cur = db.execute("SELECT * FROM WaitingLists WHERE StudentId = ? and ClassId= ?", [StudentId,ClassId])
+    # cur = db.execute("SELECT * FROM WaitingLists WHERE StudentUserName = ? and ClassId= ?", [StudentUserName,ClassId])
+    # cur = db.execute("""SELECT
+    #                  Students.StudentId as student_username,
+    #                  Students.FirstName || ', ' || Students.LastName as student_name,
+    #                  Classes.CourseCode || ' - ' || Classes.SectionNumber as class_section,
+    #                  Classes.ClassName as class_name,
+    #                  WaitingLists.WaitingListPos as waiting_list_position
+
+    #                  FROM WaitingLists
+
+    #                  JOIN Students
+    #                  ON WaitingLists.StudentId = Students.StudentId 
+
+    #                  JOIN Classes
+    #                  ON WaitingLists.ClassId = Classes.ClassId
+
+    #                  WHERE WaitingLists.StudentId = ? 
+    #                  and WaitingLists.ClassId= ?""", [StudentId, ClassId])
+
     cur = db.execute("""SELECT
-                     Students.StudentId as student_id,
-                     Students.FirstName || ', ' || Students.LastName as student_name,
+                     WaitingLists.StudentName as student_name,
                      Classes.CourseCode || ' - ' || Classes.SectionNumber as class_section,
                      Classes.ClassName as class_name,
                      WaitingLists.WaitingListPos as waiting_list_position
 
                      FROM WaitingLists
 
-                     JOIN Students
-                     ON WaitingLists.StudentId = Students.StudentId 
-
                      JOIN Classes
                      ON WaitingLists.ClassId = Classes.ClassId
 
-                     WHERE WaitingLists.StudentId = ? 
-                     and WaitingLists.ClassId= ?""", [StudentId, ClassId])
+                     WHERE WaitingLists.StudentUserName = ? 
+                     and WaitingLists.ClassId= ?""", [username, ClassId])
     waitingList = cur.fetchone()
     if not waitingList:
         raise HTTPException(
@@ -384,23 +388,17 @@ def retrieve_waitinglist_position(
         )
     return  {
             "data": waitingList,
-            # "WaitingListPos":waitingList['waiting_list_position']
             }
     
 
 # Remove from Waiting List
-@app.delete("/students/{StudentId}/waiting-list/{ClassId}",status_code=status.HTTP_200_OK)
+@app.delete("/students/waiting-list/{ClassId}",status_code=status.HTTP_200_OK)
 def delete_waitinglist(
-    StudentId: int, ClassId: int, db: sqlite3.Connection = Depends(get_db)
+    ClassId: int, db: sqlite3.Connection = Depends(get_db), current_user=Depends(get_current_user)
 ):
-    # checking if student exist
-    cur = db.execute("Select * from Students where StudentId = ?",[StudentId])
-    entry = cur.fetchone()
-    if(not entry):
-        raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail= 'Student Does Not Exist',
-            )
+    # Current User Info
+    username, fullName = current_user.get("sub"), current_user.get("name")
+
     # checking if class exist
     cur = db.execute("Select * from classes where ClassId = ?",[ClassId])
     entry = cur.fetchone()
@@ -410,76 +408,32 @@ def delete_waitinglist(
                 detail= 'Class Does Not Exist',
             )
     
-    # getting class waitlist
-    cur = db.execute("SELECT WaitListId, StudentId, WaitingListPos FROM WaitingLists WHERE ClassId = ?", [ClassId]).fetchall()
-    
-    waitList = [
-        {"id" : entry["WaitListId"],
-         "student_id" : entry["StudentId"],
-         "position" : entry["WaitingListPos"],
-         "index": ind,
-         } for ind, entry in enumerate(cur)]
-
-    # Checking if entry exist in waitinglist
-    isStudentInWaitlist = [entry for entry in waitList if entry["student_id"] == StudentId ]
-
-    if not isStudentInWaitlist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = "Not in Waitlist")
-    
-    # filtering out dropped student from waitlist. notice that the "hole" in the waitlist array is now the index of the next student in the waitlist
-    new_wait_list = list(filter(lambda x: x["student_id"] != StudentId, waitList))
-
-    # updating position of next student in waitlist all the way to end of waitlist
-    for x in range(isStudentInWaitlist[0]["index"], len(new_wait_list)):
-        new_wait_list[x]["position"] -= 1
-    
-    # only the sub array (from index of hole to end of waitlist) needs to be updated
-    update_required_entries = new_wait_list[isStudentInWaitlist[0]["index"] : len(new_wait_list)]
-
-    sql_script = ''
-    for entry in update_required_entries:
-        sql_script += f'''UPDATE WaitingLists SET WaitingListPos = {entry["position"]} WHERE ClassId={ClassId} and WaitListId={entry["id"]};'''
-    
-    sql_script += f'DELETE FROM WaitingLists WHERE StudentId = {StudentId} and ClassId = {ClassId};'
-    
+    # checking if student exist in the waitlist
+    cur = db.execute("SELECT WaitListId FROM WaitingLists WHERE StudentUserName = ? and ClassId= ?", [username,ClassId])
+    waitingList = cur.fetchone()
+    if not waitingList:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Not in Waitlist"
+        )
+     # updating waitlist positions
     try:
-        db.executescript(sql_script)
+        # 
+        cur = db.execute("Select * from WaitingLists where ClassId = ? and WaitListId > ?",[ClassId, waitingList['WaitListId']])
+        entries = cur.fetchall()
+        for entry in entries:
+            db.execute("""
+                        UPDATE WaitingLists SET WaitingListPos = ? where ClassId = ? and WaitListId = ?
+                        """,
+                        [(entry['WaitingListPos']-1),ClassId,entry['WaitListId']])
+        db.execute("DELETE FROM WaitingLists WHERE StudentUserName = ? and ClassId= ?", [username,ClassId])
         db.commit()
-    
     except sqlite3.IntegrityError as e:
         db.rollback()
         raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={"type": type(e).__name__, "msg": str(e)},
             )
-
-    # #
-    # cur = db.execute("SELECT * FROM WaitingLists WHERE StudentId = ? and ClassId= ?", [StudentId,ClassId])
-    # waitingList = cur.fetchone()
-    # if not waitingList:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_404_NOT_FOUND, detail="Not in Waitlist"
-    #     )
-    #  # updating waitlist positions
-    # try:
-    #     # 
-    #     cur = db.execute("Select * from WaitingLists where ClassId = ? and WaitListId > ?",[ClassId, waitingList['WaitListId']])
-    #     entries = cur.fetchall()
-    #     for entry in entries:
-    #         db.execute("""
-    #                     UPDATE WaitingLists SET WaitingListPos = ? where ClassId = ? and WaitListId = ?
-    #                     """,
-    #                     [(entry['WaitingListPos']-1),ClassId,entry['WaitListId']])
-    #         db.commit()
-    #     db.execute("DELETE FROM WaitingLists WHERE StudentId = ? and ClassId= ?", [StudentId,ClassId])
-    #     db.commit()
-    # except sqlite3.IntegrityError as e:
-    #     db.rollback()
-    #     raise HTTPException(
-    #             status_code=status.HTTP_409_CONFLICT,
-    #             detail={"type": type(e).__name__, "msg": str(e)},
-    #         )
-    # db.commit()
+    db.commit()
     return  {
                 "Message": "successfully removed from the waiting list"
             }
@@ -493,16 +447,8 @@ Instructors API ENDPOINTS
 def retrieve_Instructors_Classes(
     InstructorId: int, db: sqlite3.Connection = Depends(get_db)
 ):
-    # checking if instructor exist
-    cur = db.execute("Select * from instructors where InstructorId = ?",[InstructorId])
-    entry = cur.fetchone()
-    if(not entry):
-        raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail= 'Instructor Does Not Exist',
-            )
     
-    cur = db.execute("SELECT classname,currentenrollment FROM Classes WHERE InstructorId = ?", [InstructorId])
+    cur = db.execute("SELECT classname,currentenrollment FROM Classes WHERE InstructorUserName = ?", [InstructorId])
     instructorClasses = cur.fetchall()
     if not instructorClasses:
         raise HTTPException(
@@ -528,14 +474,11 @@ def retrieve_Classes_WaitingList(
     
     cur = db.execute("""SELECT 
                      WaitListId,
-                     Students.StudentId,
-                     Students.FirstName || ', ' || Students.LastName as student_name,
+                     StudentName as student_name,
                      ClassId,
                      WaitingListPos,
                      DateAdded
                      FROM WaitingLists 
-                     JOIN Students
-                     ON WaitingLists.StudentId = Students.StudentId
                      WHERE ClassId = ?""", [ClassId])
     classesWaitingList = cur.fetchall()
     if not classesWaitingList:
@@ -563,14 +506,8 @@ def retrieve_instructors_dropped_students(
     # cur = db.execute("SELECT * FROM Students WHERE StudentId in (SELECT StudentId FROM Enrollments WHERE  ClassId = ? and Dropped = 1)", [ClassId])
     cur = db.execute("""
                      SELECT
-                     Students.StudentId,
-                     Students.FirstName || ', ' || Students.LastName as student_name,
-                     Students.Email as email
+                     StudentName as student_name,
                      FROM Enrollments
-
-                     JOIN Students
-                     ON Enrollments.StudentId = Students.StudentId
-
                      WHERE ClassId = ?
                      AND Dropped = 1
                      """, [ClassId])
@@ -734,11 +671,11 @@ def create_class(
     try:
         cur = db.execute(
             """
-            INSERT INTO Classes(InstructorId,Department,CourseCode,SectionNumber,
+            INSERT INTO Classes(InstructorUserName, InstructorName,Department,CourseCode,SectionNumber,
             ClassName,CurrentEnrollment,MaxEnrollment,AutomaticEnrollmentFrozen)
-            VALUES(?, ?, ? , ?, ?, 0, ?, ?) 
+            VALUES(?,?, ?, ? , ?, ?, 0, ?, ?) 
             """,
-                [class_.InstructorId,class_.Department,class_.CourseCode,class_.SectionNumber,
+                [class_.InstructorUserName, class_.InstructorName,class_.Department,class_.CourseCode,class_.SectionNumber,
                 class_.ClassName,class_.MaxEnrollment,class_.AutomaticEnrollmentFrozen]
             )
         newClassId = cur.lastrowid
@@ -753,7 +690,7 @@ def create_class(
     return {'status':"Class created successfully"}
 
 # Remove Existing Sections
-@app.delete("/classes/{ClassId}",status_code=status.HTTP_200_OK)
+@app.delete("/classes/{classId}",status_code=status.HTTP_200_OK)
 def remove_section(
     classId:int , db: sqlite3.Connection = Depends(get_db)
 ):
@@ -771,22 +708,6 @@ def remove_section(
                          DELETE FROM Enrollments WHERE ClassId={classId};
                          DELETE FROM WaitingLists WHERE ClassId= {classId};
                          ''')
-        # db.execute(
-        #     """
-        #     DELETE FROM Classes WHERE ClassId= ? 
-        #     """,
-        #     [classId])
-        # # Remove students from enrollments and waitlists
-        # db.execute(
-        #     """
-        #     DELETE FROM Enrollments WHERE ClassId= ? 
-        #     """,
-        #     [classId])
-        # db.execute(
-        #     """
-        #     DELETE FROM WaitingLists WHERE ClassId= ? 
-        #     """,
-        #     [classId])
         db.commit()
     except sqlite3.IntegrityError as e:
         db.rollback()
@@ -810,19 +731,19 @@ def change_instructor(
                 detail= 'Class Does Not Exist',
             )
     # checking if instructor exist
-    cur = db.execute("Select * from instructors where InstructorId = ?",[Instructor.InstructorId])
-    entry = cur.fetchone()
-    if(not entry):
-        raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail= 'Instructor Does Not Exist',
-            )
+    # cur = db.execute("Select * from instructors where InstructorId = ?",[Instructor.InstructorId])
+    # entry = cur.fetchone()
+    # if(not entry):
+    #     raise HTTPException(
+    #             status_code=status.HTTP_404_NOT_FOUND,
+    #             detail= 'Instructor Does Not Exist',
+    #         )
     try:
         db.execute(
             """
-            UPDATE Classes SET InstructorId = ? where ClassId = ?
+            UPDATE Classes SET InstructorUserName = ?, InstructorName = ? where ClassId = ?
             """,
-            [Instructor.InstructorId,ClassId])
+            [Instructor.InstructorUserName, Instructor.InstructorName,ClassId])
         db.commit()
     except sqlite3.IntegrityError as e:
         db.rollback()
