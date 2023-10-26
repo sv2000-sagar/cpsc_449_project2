@@ -1,7 +1,7 @@
 import sqlite3
 
 def create_database():
-    conn = sqlite3.connect("../var/users.db")  
+    conn = sqlite3.connect("../var/primary/fuse/users.db")  
     cursor = conn.cursor()
 
     cursor.execute('''

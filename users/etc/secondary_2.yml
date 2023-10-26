@@ -1,0 +1,15 @@
+
+fuse:
+  dir: "users/var/secondary_2/fuse"
+  allow-other: false
+
+data:
+  dir: "users/var/secondary_2/data"
+
+http:
+  addr: ":20204"
+
+lease:
+  type: "static"
+  advertise-url: "http://127.0.0.1:20202"
+  candidate: false

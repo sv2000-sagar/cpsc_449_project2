@@ -70,307 +70,9 @@
                 "url_pattern": "/classes",
                 "method": "GET",
                 "host": [
-                    "http://localhost:5100"
-                ],
-                "extra_config": {
-                    "backend/http": {
-                        "return_error_details": "backend_alias"
-                    }
-                }
-                }
-            ]
-            },
-                        {
-                "@comment": "Enroll for Classes" ,
-                        "endpoint": "/api/enrollments",
-                        "input_headers":[
-                            "authorization"
-                        ],
-                        "method": "POST",
-                        "extra_config": {
-                            "auth/validator": {
-                                "alg": "HS256",
-                                "jwk_local_path": "users/share/symmetric.json",
-                                "roles": ["student"],
-                                "roles_key": "roles",
-                                "disable_jwk_security": true   
-                            }
-                        },
-                        "backend": [
-                            {
-                            "url_pattern": "/enrollments/",
-                            "method": "POST",
-                            "host": [
-                                "http://localhost:5100"
-                            ],
-                            "extra_config": {
-                                "backend/http": {
-                                    "return_error_details": "backend_alias"
-                                }
-                            }
-                            }
-                        ]
-                        },
-                        {
-                "@comment": "Delete enrollment of student" ,
-                            "endpoint": "/api/students/enrollments/{ClassId}",
-                            "input_headers":[
-                                "authorization"
-                            ],
-                            "method": "DELETE",
-                            "extra_config": {
-                                "auth/validator": {
-                                    "alg": "HS256",
-                                    "jwk_local_path": "users/share/symmetric.json",
-                                    "roles": ["student"],
-                                    "roles_key": "roles",
-                                    "disable_jwk_security": true   
-                                }
-                            },
-                            "backend": [
-                                {
-                                "url_pattern": "/students/enrollments/{ClassId}",
-                                "method": "DELETE",
-                                "host": [
-                                    "http://localhost:5100"
-                                ],
-                                "extra_config": {
-                                    "backend/http": {
-                                        "return_error_details": "backend_alias"
-                                    }
-                                }
-                                }
-                            ]
-                        },
-                        {
-                "@comment": "View Waiting List Position" ,
-                            "endpoint": "/api/students/waiting-list/{ClassId}",
-                            "input_headers":[
-                                "authorization"
-                            ],
-                            "method": "GET",
-                            "extra_config": {
-                                "auth/validator": {
-                                    "alg": "HS256",
-                                    "jwk_local_path": "users/share/symmetric.json",
-                                    "roles": ["student"],
-                                    "roles_key": "roles",
-                                    "disable_jwk_security": true   
-                                }
-                            },
-                            "backend": [
-                                {
-                                "url_pattern": "/students/waiting-list/{ClassId}",
-                                "method": "GET",
-                                "host": [
-                                    "http://localhost:5100"
-                                ],
-                                "extra_config": {
-                                    "backend/http": {
-                                        "return_error_details": "backend_alias"
-                                    }
-                                }
-                                }
-                            ]
-                        },
-
-
-                        {
-                            "@comment": "Remove from Waiting List" ,
-                                        "endpoint": "/api/students/waiting-list/{ClassId}",
-                                        "input_headers":[
-                                            "authorization"
-                                        ],
-                                        "method": "DELETE",
-                                        "extra_config": {
-                                            "auth/validator": {
-                                                "alg": "HS256",
-                                                "jwk_local_path": "users/share/symmetric.json",
-                                                "roles": ["student"],
-                                                "roles_key": "roles",
-                                                "disable_jwk_security": true   
-                                            }
-                                        },
-                                        "backend": [
-                                            {
-                                            "url_pattern": "/students/waiting-list/{ClassId}",
-                                            "method": "DELETE",
-                                            "host": [
-                                                "http://localhost:5100"
-                                            ],
-                                            "extra_config": {
-                                                "backend/http": {
-                                                    "return_error_details": "backend_alias"
-                                                }
-                                            }
-                                            }
-                                        ]
-                                    },
-
-            
-                        {
-                            "@comment": "Add New Classes and Sections" ,
-                                        "endpoint": "/api/classes/",
-                                        "input_headers":[
-                                            "authorization"
-                                        ],
-                                        "method": "POST",
-                                        "extra_config": {
-                                            "auth/validator": {
-                                                "alg": "HS256",
-                                                "jwk_local_path": "users/share/symmetric.json",
-                                                "roles": ["registrar"],
-                                                "roles_key": "roles",
-                                                "disable_jwk_security": true   
-                                            }
-                                        },
-                                        "backend": [
-                                            {
-                                            "url_pattern": "/classes/",
-                                            "method": "POST",
-                                            "host": [
-                                                "http://localhost:5100"
-                                            ],
-                                            "extra_config": {
-                                                "backend/http": {
-                                                    "return_error_details": "backend_alias"
-                                                }
-                                            }
-                                            }
-                                        ]
-                                    },
-            
-
-                        {
-                            "@comment": "Remove Existing Class/Sections" ,
-                                        "endpoint": "/api/classes/{ClassId}",
-                                        "input_headers":[
-                                            "authorization"
-                                        ],
-                                        "method": "DELETE",
-                                        "extra_config": {
-                                            "auth/validator": {
-                                                "alg": "HS256",
-                                                "jwk_local_path": "users/share/symmetric.json",
-                                                "roles": ["registrar"],
-                                                "roles_key": "roles",
-                                                "disable_jwk_security": true   
-                                            }
-                                        },
-                                        "backend": [
-                                            {
-                                            "url_pattern": "/classes/{ClassId}",
-                                            "method": "DELETE",
-                                            "host": [
-                                                "http://localhost:5100"
-                                            ],
-                                            "extra_config": {
-                                                "backend/http": {
-                                                    "return_error_details": "backend_alias"
-                                                }
-                                            }
-                                            }
-                                        ]
-                                    },
-
-                                    {
-                                        "@comment": "Change Instructor for a Section" ,
-                                                    "endpoint": "/api/classes/{ClassId}/instructor",
-                                                    "input_headers":[
-                                                        "authorization"
-                                                    ],
-                                                    "method": "PUT",
-                                                    "extra_config": {
-                                                        "auth/validator": {
-                                                            "alg": "HS256",
-                                                            "jwk_local_path": "users/share/symmetric.json",
-                                                            "roles": ["registrar"],
-                                                            "roles_key": "roles",
-                                                            "disable_jwk_security": true   
-                                                        }
-                                                    },
-                                                    "backend": [
-                                                        {
-                                                        "url_pattern": "/classes/{ClassId}/instructor",
-                                                        "method": "PUT",
-                                                        "host": [
-                                                            "http://localhost:5100"
-                                                        ],
-                                                        "extra_config": {
-                                                            "backend/http": {
-                                                                "return_error_details": "backend_alias"
-                                                            }
-                                                        }
-                                                        }
-                                                    ]
-                                                },
-
-                                                {
-                                                    "@comment": "Freeze automatic enrollment from waiting lists" ,
-                                                                "endpoint": "/api/classes/{ClassId}/freeze-enrollment",
-                                                                "input_headers":[
-                                                                    "authorization"
-                                                                ],
-                                                                "method": "PUT",
-                                                                "extra_config": {
-                                                                    "auth/validator": {
-                                                                        "alg": "HS256",
-                                                                        "jwk_local_path": "users/share/symmetric.json",
-                                                                        "roles": ["registrar"],
-                                                                        "roles_key": "roles",
-                                                                        "disable_jwk_security": true   
-                                                                    }
-                                                                },
-                                                                "backend": [
-                                                                    {
-                                                                    "url_pattern": "/classes/{ClassId}/freeze-enrollment",
-                                                                    "method": "PUT",
-                                                                    "host": [
-                                                                        "http://localhost:5100"
-                                                                    ],
-                                                                    "extra_config": {
-                                                                        "backend/http": {
-                                                                            "return_error_details": "backend_alias"
-                                                                        }
-                                                                    }
-                                                                    }
-                                                                ]
-                                                            },
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        {
-            "endpoint": "/api/users/",
-            "method": "GET",
-            "backend": [
-                {
-                "url_pattern": "/users/",
-                "method": "GET",
-                "host": [
-                    "http://localhost:5000"
+                    "http://localhost:5100",
+                    "http://localhost:5101",
+                    "http://localhost:5102"
                 ],
                 "extra_config": {
                     "backend/http": {
@@ -381,14 +83,62 @@
             ]
             },
             {
-                "endpoint": "/api/classes/{id}",
-                "method": "GET",
+    "@comment": "Enroll for Classes" ,
+            "endpoint": "/api/enrollments",
+            "input_headers":[
+                "authorization"
+            ],
+            "method": "POST",
+            "extra_config": {
+                "auth/validator": {
+                    "alg": "HS256",
+                    "jwk_local_path": "users/share/symmetric.json",
+                    "roles": ["student"],
+                    "roles_key": "roles",
+                    "disable_jwk_security": true   
+                }
+            },
+            "backend": [
+                {
+                "url_pattern": "/enrollments/",
+                "method": "POST",
+                "host": [
+                    "http://localhost:5100",
+                    "http://localhost:5101",
+                    "http://localhost:5102"
+                ],
+                "extra_config": {
+                    "backend/http": {
+                        "return_error_details": "backend_alias"
+                    }
+                }
+                }
+            ]
+            },
+            {
+    "@comment": "Delete enrollment of student" ,
+                "endpoint": "/api/students/enrollments/{ClassId}",
+                "input_headers":[
+                    "authorization"
+                ],
+                "method": "DELETE",
+                "extra_config": {
+                    "auth/validator": {
+                        "alg": "HS256",
+                        "jwk_local_path": "users/share/symmetric.json",
+                        "roles": ["student"],
+                        "roles_key": "roles",
+                        "disable_jwk_security": true   
+                    }
+                },
                 "backend": [
                     {
-                    "url_pattern": "/books/{id}",
-                    "method": "GET",
+                    "url_pattern": "/students/enrollments/{ClassId}",
+                    "method": "DELETE",
                     "host": [
-                        "http://localhost:5000"
+                        "http://localhost:5100",
+                        "http://localhost:5101",
+                        "http://localhost:5102"
                     ],
                     "extra_config": {
                         "backend/http": {
@@ -397,25 +147,348 @@
                     }
                     }
                 ]
-                },
-                {
-                    "endpoint": "/api/books/search",
-                    "method": "GET",
-                    "backend": [
-                        {
-                        "url_pattern": "/search",
-                        "method": "GET",
-                        "host": [
-                            "http://localhost:5000"
-                        ],
-                        "extra_config": {
-                            "backend/http": {
-                                "return_error_details": "backend_alias"
-                            }
-                        }
-                        }
-                    ],
-                    "input_query_strings": ["author","published","title","first_sentence"]
+            },
+            {
+    "@comment": "View Waiting List Position" ,
+                "endpoint": "/api/students/waiting-list/{ClassId}",
+                "input_headers":[
+                    "authorization"
+                ],
+                "method": "GET",
+                "extra_config": {
+                    "auth/validator": {
+                        "alg": "HS256",
+                        "jwk_local_path": "users/share/symmetric.json",
+                        "roles": ["student"],
+                        "roles_key": "roles",
+                        "disable_jwk_security": true   
                     }
+                },
+                "backend": [
+                    {
+                    "url_pattern": "/students/waiting-list/{ClassId}",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5100",
+                        "http://localhost:5101",
+                        "http://localhost:5102"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                    }
+                ]
+            },
+
+
+    {
+    "@comment": "Remove from Waiting List" ,
+                "endpoint": "/api/students/waiting-list/{ClassId}",
+                "input_headers":[
+                    "authorization"
+                ],
+                "method": "DELETE",
+                "extra_config": {
+                    "auth/validator": {
+                        "alg": "HS256",
+                        "jwk_local_path": "users/share/symmetric.json",
+                        "roles": ["student"],
+                        "roles_key": "roles",
+                        "disable_jwk_security": true   
+                    }
+                },
+                "backend": [
+                    {
+                    "url_pattern": "/students/waiting-list/{ClassId}",
+                    "method": "DELETE",
+                    "host": [
+                        "http://localhost:5100",
+                        "http://localhost:5101",
+                        "http://localhost:5102"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                    }
+                ]
+            },
+
+    
+    {   
+    "@comment": "Add New Classes and Sections" ,
+                "endpoint": "/api/classes/",
+                "input_headers":[
+                    "authorization"
+                ],
+                "method": "POST",
+                "extra_config": {
+                    "auth/validator": {
+                        "alg": "HS256",
+                        "jwk_local_path": "users/share/symmetric.json",
+                        "roles": ["registrar"],
+                        "roles_key": "roles",
+                        "disable_jwk_security": true   
+                    }
+                },
+                "backend": [
+                    {
+                    "url_pattern": "/classes/",
+                    "method": "POST",
+                    "host": [
+                        "http://localhost:5100",
+                        "http://localhost:5101",
+                        "http://localhost:5102"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                    }
+                ]
+            },
+    
+
+{
+    "@comment": "Remove Existing Class/Sections" ,
+                "endpoint": "/api/classes/{ClassId}",
+                "input_headers":[
+                    "authorization"
+                ],
+                "method": "DELETE",
+                "extra_config": {
+                    "auth/validator": {
+                        "alg": "HS256",
+                        "jwk_local_path": "users/share/symmetric.json",
+                        "roles": ["registrar"],
+                        "roles_key": "roles",
+                        "disable_jwk_security": true   
+                    }
+                },
+                "backend": [
+                    {
+                    "url_pattern": "/classes/{ClassId}",
+                    "method": "DELETE",
+                    "host": [
+                        "http://localhost:5100",
+                        "http://localhost:5101",
+                        "http://localhost:5102"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                    }
+                ]
+            },
+
+{
+    "@comment": "Change Instructor for a Section" ,
+                "endpoint": "/api/classes/{ClassId}/instructor",
+                "input_headers":[
+                    "authorization"
+                ],
+                "method": "PUT",
+                "extra_config": {
+                    "auth/validator": {
+                        "alg": "HS256",
+                        "jwk_local_path": "users/share/symmetric.json",
+                        "roles": ["registrar"],
+                        "roles_key": "roles",
+                        "disable_jwk_security": true   
+                    }
+                },
+                "backend": [
+                    {
+                    "url_pattern": "/classes/{ClassId}/instructor",
+                    "method": "PUT",
+                    "host": [
+                        "http://localhost:5100",
+                        "http://localhost:5101",
+                        "http://localhost:5102"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                    }
+                ]
+            },
+
+{
+    "@comment": "Freeze automatic enrollment from waiting lists" ,
+                "endpoint": "/api/classes/{ClassId}/freeze-enrollment",
+                "input_headers":[
+                    "authorization"
+                ],
+                "method": "PUT",
+                "extra_config": {
+                    "auth/validator": {
+                        "alg": "HS256",
+                        "jwk_local_path": "users/share/symmetric.json",
+                        "roles": ["registrar"],
+                        "roles_key": "roles",
+                        "disable_jwk_security": true   
+                    }
+                },
+                "backend": [
+                    {
+                    "url_pattern": "/classes/{ClassId}/freeze-enrollment",
+                    "method": "PUT",
+                    "host": [
+                        "http://localhost:5100",
+                        "http://localhost:5101",
+                        "http://localhost:5102"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                    }
+                ]
+            },
+
+
+{
+    "@comment": " Instructors View Current Enrollment for Their Classes" ,
+                "endpoint": "/api/instructors/classes",
+                "input_headers":[
+                    "authorization"
+                ],
+                "method": "GET",
+                "extra_config": {
+                    "auth/validator": {
+                        "alg": "HS256",
+                        "jwk_local_path": "users/share/symmetric.json",
+                        "roles": ["instructor"],
+                        "roles_key": "roles",
+                        "disable_jwk_security": true   
+                    }
+                },
+                "backend": [
+                    {
+                    "url_pattern": "/instructors/classes",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5100",
+                        "http://localhost:5101",
+                        "http://localhost:5102"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                    }
+                ]
+            },
+
+    {
+    "@comment": " Instructors View the current waiting list for the course" ,
+            "endpoint": "/api/classes/wait-list/{class_id}",
+            "input_headers":[
+                "authorization"
+            ],
+            "method": "GET",
+            "extra_config": {
+                "auth/validator": {
+                    "alg": "HS256",
+                    "jwk_local_path": "users/share/symmetric.json",
+                    "roles": ["instructor"],
+                    "roles_key": "roles",
+                    "disable_jwk_security": true   
+                }
+            },
+            "backend": [
+                {
+                "url_pattern": "/classes/{class_id}/wait-list",
+                "method": "GET",
+                "host": [
+                    "http://localhost:5100",
+                    "http://localhost:5101",
+                    "http://localhost:5102"
+                ],
+                "extra_config": {
+                    "backend/http": {
+                        "return_error_details": "backend_alias"
+                    }
+                }
+                }
+            ]
+        },
+
+{
+    "@comment": " Instructors View Students Who Have Dropped the Class" ,
+                "endpoint": "/api/instructors/{ClassId}/dropped-students",
+                "input_headers":[
+                    "authorization"
+                ],
+                "method": "GET",
+                "extra_config": {
+                    "auth/validator": {
+                        "alg": "HS256",
+                        "jwk_local_path": "users/share/symmetric.json",
+                        "roles": ["instructor"],
+                        "roles_key": "roles",
+                        "disable_jwk_security": true   
+                    }
+                },
+                "backend": [
+                    {
+                    "url_pattern": "/instructors/{ClassId}/dropped-students",
+                    "method": "GET",
+                    "host": [
+                        "http://localhost:5100",
+                        "http://localhost:5101",
+                        "http://localhost:5102"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                    }
+                ]
+            },
+{
+    "@comment": " Instructors can drop students administratively" ,
+                "endpoint": "/api/instructors/drop-student/{StudentUserName}/{ClassId}",
+                "input_headers":[
+                    "authorization"
+                ],
+                "method": "DELETE",
+                "extra_config": {
+                    "auth/validator": {
+                        "alg": "HS256",
+                        "jwk_local_path": "users/share/symmetric.json",
+                        "roles": ["instructor"],
+                        "roles_key": "roles",
+                        "disable_jwk_security": true   
+                    }
+                },
+                "backend": [
+                    {
+                    "url_pattern": "/instructors/drop-student/{StudentUserName}/{ClassId}",
+                    "method": "DELETE",
+                    "host": [
+                        "http://localhost:5100",
+                        "http://localhost:5101",
+                        "http://localhost:5102"
+                    ],
+                    "extra_config": {
+                        "backend/http": {
+                            "return_error_details": "backend_alias"
+                        }
+                    }
+                    }
+                ]
+            }
     ]
 }

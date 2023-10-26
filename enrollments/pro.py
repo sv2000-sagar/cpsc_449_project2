@@ -443,12 +443,13 @@ Instructors API ENDPOINTS
 """
 
 # View Current Enrollment for Their Classes
-@app.get("/instructors/{InstructorId}/classes",status_code=status.HTTP_200_OK)
+@app.get("/instructors/classes",status_code=status.HTTP_200_OK)
 def retrieve_Instructors_Classes(
-    InstructorId: int, db: sqlite3.Connection = Depends(get_db)
+    db: sqlite3.Connection = Depends(get_db), current_user=Depends(get_current_user)
 ):
-    
-    cur = db.execute("SELECT classname,currentenrollment FROM Classes WHERE InstructorUserName = ?", [InstructorId])
+     # Current User Info
+    username, fullName = current_user.get("sub"), current_user.get("name")
+    cur = db.execute("SELECT classname,currentenrollment FROM Classes WHERE InstructorUserName = ?", [username])
     instructorClasses = cur.fetchall()
     if not instructorClasses:
         raise HTTPException(
@@ -506,7 +507,7 @@ def retrieve_instructors_dropped_students(
     # cur = db.execute("SELECT * FROM Students WHERE StudentId in (SELECT StudentId FROM Enrollments WHERE  ClassId = ? and Dropped = 1)", [ClassId])
     cur = db.execute("""
                      SELECT
-                     StudentName as student_name,
+                     StudentName as student_name
                      FROM Enrollments
                      WHERE ClassId = ?
                      AND Dropped = 1
@@ -521,37 +522,29 @@ def retrieve_instructors_dropped_students(
             }
 
 # Drop students administratively
-@app.delete("/instructors/{InstructorId}/drop-student/{StudentId}/{ClassId}")
+@app.delete("/instructors/drop-student/{StudentUserName}/{ClassId}")
 def drop_students_administratively(
-    InstructorId:int, StudentId:int, ClassId:int, db: sqlite3.Connection = Depends(get_db)
-):
-    # checking if instructor exist
-    cur = db.execute("Select * from instructors where InstructorId = ?",[InstructorId])
-    entry = cur.fetchone()
-    if(not entry):
-        raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail= 'Instructor Does Not Exist',
-            )
-    
+    StudentUserName:str, ClassId:int, db: sqlite3.Connection = Depends(get_db),current_user=Depends(get_current_user)
+):    
+    # Current User Info
+    username, fullName = current_user.get("sub"), current_user.get("name")
     # check if class exists
-    cur = db.execute("select CurrentEnrollment, MaxEnrollment, AutomaticEnrollmentFrozen, InstructorId from Classes where ClassId = ?",[ClassId])
-
+    cur = db.execute("select CurrentEnrollment, MaxEnrollment, AutomaticEnrollmentFrozen, InstructorUserName from Classes where ClassId = ?",[ClassId])
     entries = cur.fetchone()
     if(not entries):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class does not exist")
     currentEnrollment, maxEnrollment, automaticEnrollmentFrozen, instructorId = entries
 
-    # checking if InstructorId is valid
-    if(InstructorId != instructorId):
+    # checking if Instructor is valid
+    if(entries["InstructorUserName"] != username):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not the instructor of this class") # Forbidden srtatus code
 
     # Checking if student was enrolled to the course
     cur = db.execute(
         """
-        Select * from Enrollments where ClassId = ? and  StudentId = ? and dropped = 0
+        Select * from Enrollments where ClassId = ? and  StudentUserName = ? and dropped = 0
         """,
-        [ClassId, StudentId])
+        [ClassId, StudentUserName])
     entries = cur.fetchone()
     if(not entries):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student is not enrolled in this class") #Not Found 
@@ -559,9 +552,9 @@ def drop_students_administratively(
     # dropping the course
     try:
         db.execute("""
-                    UPDATE Enrollments SET dropped = 1 where ClassId = ? and StudentId = ?
+                    UPDATE Enrollments SET dropped = 1 where ClassId = ? and StudentUserName = ?
                     """,
-                    [ClassId,StudentId]) 
+                    [ClassId,StudentUserName]) 
         db.execute("""
                     UPDATE Classes SET CurrentEnrollment = ? where ClassId = ? 
                     """,
@@ -580,19 +573,19 @@ def drop_students_administratively(
 
         # Enrolling student who is on top of the waitlist
                 # Checking if student was enrolled to that course earlier
-        cur = db.execute("Select * from Enrollments where ClassId = ? and  StudentId = ?",[ClassId, entry['StudentId']])
+        cur = db.execute("Select * from Enrollments where ClassId = ? and  StudentUserName = ?",[ClassId, entry['StudentUserName']])
         enrollment_entry = cur.fetchone()
         if(enrollment_entry):
             try:
-                cur = db.execute("UPDATE Enrollments SET dropped = 0 where ClassId = ? and StudentId = ?",[ClassId, entry['StudentId']])
+                cur = db.execute("UPDATE Enrollments SET dropped = 0 where ClassId = ? and StudentUserName = ?",[ClassId, entry['StudentUserName']])
                 db.execute("""
                         UPDATE Classes SET CurrentEnrollment = ? where ClassId = ? 
                         """,
                         [(currentEnrollment),ClassId])
                 db.execute("""
-                            DELETE FROM WaitingLists WHERE StudentId = ? and ClassId= ? 
+                            DELETE FROM WaitingLists WHERE StudentUserName = ? and ClassId= ? 
                             """,
-                            [entry['StudentId'],ClassId])
+                            [entry['StudentUserName'],ClassId])
                 
                 db.commit()
             except sqlite3.IntegrityError as e:
@@ -604,15 +597,15 @@ def drop_students_administratively(
             try:
                 cur = db.execute(
                 """
-                INSERT INTO enrollments(StudentId,ClassID,EnrollmentDate)
-                VALUES(?, ?, datetime('now')) 
+                INSERT INTO enrollments(StudentUserName,StudentName,ClassID,EnrollmentDate)
+                VALUES(?, ?, ?, datetime('now')) 
                 """,
-                [entry['StudentId'], ClassId],
+                [entry['StudentUserName'],entry['StudentName'], ClassId],
             )
                 db.execute("""
-                            DELETE FROM WaitingLists WHERE StudentId = ? and ClassId= ? 
+                            DELETE FROM WaitingLists WHERE StudentUserName = ? and ClassId= ? 
                             """,
-                            [entry['StudentId'],ClassId])
+                            [entry['StudentUserName'],ClassId])
                 db.execute("""
                         UPDATE Classes SET CurrentEnrollment = ? where ClassId = ? 
                         """,

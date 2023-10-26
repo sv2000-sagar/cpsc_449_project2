@@ -15,24 +15,38 @@ import secrets
 import json
 import datetime
 import jwt
+import itertools
 
 # ------------- Constants -------------
-DATABASE='users/var/users.db'
+PRIMARY_DATABASE='users/var/primary/fuse/users.db'
+SECONDARY_1_DATABASE='users/var/secondary_1/fuse/users.db'
+SECONDARY_2_DATABASE='users/var/secondary_2/fuse/users.db'
+SECONDARY_DATABASE=[SECONDARY_1_DATABASE,SECONDARY_2_DATABASE]
 LOGGING_CONFIG='users/etc/logging.ini'
 ALGORITHM = "pbkdf2_sha256"
+
+# Create an infinite cycle to loop through the secondary databases
+db_cycle = itertools.cycle(SECONDARY_DATABASE)
 
 def get_logger():
     return logging.getLogger(__name__)
 
-def get_db(logger: logging.Logger = Depends(get_logger)):
-    with contextlib.closing(sqlite3.connect(DATABASE)) as db:
+def get_primary_db():
+    with contextlib.closing(sqlite3.connect(PRIMARY_DATABASE,check_same_thread=False)) as db:
         db.row_factory = sqlite3.Row
-        db.set_trace_callback(logger.debug)
         yield db
+
+def get_secondary_db():
+    db_url = next(db_cycle)
+    with contextlib.closing(sqlite3.connect(db_url,check_same_thread=False)) as db:
+        db.row_factory = sqlite3.Row
+        print(db_url)
+        yield db
+
 
 app = FastAPI()
 
-# logging.config.fileConfig(LOGGING_CONFIG, disable_existing_loggers=False)
+logging.config.fileConfig(LOGGING_CONFIG, disable_existing_loggers=False)
 
 # Pydantic model for user registration
 class UserRegistration(BaseModel):
@@ -73,14 +87,12 @@ def verify_password(password, password_hash):
     return secrets.compare_digest(password_hash, compare_hash)
 
 # Function to create a new user
-def create_user(user: UserRegistration):
+def create_user(user: UserRegistration, db: sqlite3.Connection):
     try:
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO users (username, password, fullname, roles) VALUES (?, ?, ?, ?)", (user.username, hash_password(user.password),user.fullname, user.roles))
-        conn.commit()
+        db.execute("INSERT INTO users (username, password, fullname, roles) VALUES (?, ?, ?, ?)", (user.username, hash_password(user.password),user.fullname, user.roles))
+        db.commit()
     except sqlite3.IntegrityError as e:
-        conn.rollback()
+        db.rollback()
         raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={"type": type(e).__name__, "msg": str(e)},
@@ -114,11 +126,8 @@ def generate_claims(username, user_id, fullName, roles):
     return token
 
 # Authentication using JWT
-def authenticate_user(user: UserLogin):
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT userid, username, password, fullName, roles FROM users WHERE username=?", [user.username])
-    user_data = cursor.fetchone()
+def authenticate_user(user: UserLogin, db: sqlite3.Connection):
+    user_data = db.execute("SELECT userid, username, password, fullName, roles FROM users WHERE username=?", [user.username]).fetchone()
     if user_data and verify_password(user.password, user_data[2]): # hashed_password = user_data[2]
         return generate_claims(user.username,user_data[0],user_data[3],user_data[4])
     raise HTTPException(status_code=401, detail="Authentication failed")
@@ -136,12 +145,12 @@ def default():
 
 # Endpoint for user registration
 @app.post("/register")
-async def register_user(user: UserRegistration):
-    create_user(user)
+async def register_user(user: UserRegistration, db: sqlite3.Connection = Depends(get_primary_db)):
+    create_user(user,db)
     return {"message": "User registered successfully"}
 
 # Endpoint for user authentication
 @app.post("/login")
-async def login_user(user: UserLogin):
-    claims = authenticate_user(user)
+async def login_user(user: UserLogin, db: sqlite3.Connection = Depends(get_secondary_db)):
+    claims = authenticate_user(user,db)
     return claims
