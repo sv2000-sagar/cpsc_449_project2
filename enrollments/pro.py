@@ -21,10 +21,8 @@ def decode_jwt(request: Request):
         payload = jwt.decode(token, options={"verify_signature": False})
         return payload
     except jwt.ExpiredSignatureError:
-        # Handle token expiration
         return None
     except jwt.DecodeError:
-        # Handle token decoding error
         return None
 
 async def get_current_user(request: Request, token: str = Depends(decode_jwt)):
