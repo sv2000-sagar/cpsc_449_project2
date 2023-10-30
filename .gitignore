@@ -1,5 +1,5 @@
-users/var/secondary_1/data/*
-users/var/secondary_1/fuse/*
+users/var/secondary_1/data/
+users/var/secondary_1/fuse/
 
-secondary_2/fuse
-secondary_2/data
+users/var/secondary_2/fuse/
+users/var/secondary_2/data/
