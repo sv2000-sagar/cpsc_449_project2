@@ -1,0 +1,10 @@
+[2023-10-17 16:18:12,098] DEBUG in users: SELECT * FROM users
+[2023-10-17 16:18:15,218] DEBUG in users: SELECT * FROM users
+[2023-11-01 13:31:21,210] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
+[2023-11-01 13:31:31,420] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
+[2023-11-01 13:32:07,397] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
+[2023-11-01 13:32:30,559] DEBUG in users.users: BEGIN 
+[2023-11-01 13:32:30,560] DEBUG in users.users: INSERT INTO users (username, password, fullname, roles) VALUES ('instructor5', 'pbkdf2_sha256$260000$43fe676745d12ad343b68c3c140d38b8$WWqh+bybVaNDFpdvvWJhAPH90HI5cvH8RvTewISpJ6Q=', 'instructor 5', 'instructor')
+[2023-11-01 13:32:30,562] DEBUG in users.users: COMMIT
+[2023-11-01 13:35:58,943] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
+[2023-11-01 13:44:10,233] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'

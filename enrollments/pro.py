@@ -9,6 +9,11 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 import jwt
 
+# ------------- Constants -------------
+DATABASE='enrollments/pro1.db'
+LOGGING_CONFIG='enrollments/etc/logging.ini'
+
+
 
 """
 Helper Functions
@@ -48,13 +53,18 @@ class UpdateInstructor(BaseModel):
     InstructorUserName: str
     InstructorName: str
 
+def get_logger():
+    return logging.getLogger(__name__)
+
+def get_db(logger: logging.Logger = Depends(get_logger)):
+    with contextlib.closing(sqlite3.connect(DATABASE)) as db:
+        db.row_factory = sqlite3.Row
+        db.set_trace_callback(logger.debug)
+        yield db
+
 app = FastAPI()
 
-
-def get_db():
-    with contextlib.closing(sqlite3.connect("enrollments/pro1.db")) as db:
-        db.row_factory = sqlite3.Row
-        yield db
+logging.config.fileConfig(LOGGING_CONFIG, disable_existing_loggers=False)
 
 @app.get("/",status_code=status.HTTP_200_OK)
 def default():

@@ -31,15 +31,18 @@ db_cycle = itertools.cycle(SECONDARY_DATABASE)
 def get_logger():
     return logging.getLogger(__name__)
 
-def get_primary_db():
+def get_primary_db(logger: logging.Logger = Depends(get_logger)):
     with contextlib.closing(sqlite3.connect(PRIMARY_DATABASE,check_same_thread=False)) as db:
         db.row_factory = sqlite3.Row
+        db.set_trace_callback(logger.debug)
         yield db
 
-def get_secondary_db():
+def get_secondary_db(logger: logging.Logger = Depends(get_logger)):
     db_url = next(db_cycle)
     with contextlib.closing(sqlite3.connect(db_url,check_same_thread=False)) as db:
         db.row_factory = sqlite3.Row
+        db.set_trace_callback(logger.debug)
+        
         print(db_url)
         yield db
 

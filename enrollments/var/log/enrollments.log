@@ -1,0 +1,14 @@
+[2023-11-01 13:46:15,502] DEBUG in enrollments.pro: Select * from classes where ClassId = 4
+[2023-11-01 13:46:15,503] DEBUG in enrollments.pro: SELECT
+                     WaitingLists.StudentName as student_name,
+                     Classes.CourseCode || ' - ' || Classes.SectionNumber as class_section,
+                     Classes.ClassName as class_name,
+                     WaitingLists.WaitingListPos as waiting_list_position
+
+                     FROM WaitingLists
+
+                     JOIN Classes
+                     ON WaitingLists.ClassId = Classes.ClassId
+
+                     WHERE WaitingLists.StudentUserName = 'student5' 
+                     and WaitingLists.ClassId= 4
