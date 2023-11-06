@@ -8,7 +8,7 @@
 ### Available REST API endpoints for the project
 
 ## Enrollments Service
-<img src="img\endpoints.png" alt="not found" width="80%">
+<img src="enrollments/img/endpoints.png" alt="not found" width="80%">
 
 </br>
 
