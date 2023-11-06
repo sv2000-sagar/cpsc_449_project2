@@ -8,3 +8,11 @@
 [2023-11-01 13:32:30,562] DEBUG in users.users: COMMIT
 [2023-11-01 13:35:58,943] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
 [2023-11-01 13:44:10,233] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
+[2023-11-04 19:26:03,017] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
+[2023-11-04 19:46:01,373] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
+[2023-11-04 21:28:03,691] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
+[2023-11-04 21:32:29,858] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
+[2023-11-04 21:37:22,836] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='student5'
+[2023-11-04 21:37:34,919] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='instructor1'
+[2023-11-04 21:40:59,746] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='instructor1'
+[2023-11-04 21:45:13,335] DEBUG in users.users: SELECT userid, username, password, fullName, roles FROM users WHERE username='instructor1'

@@ -1,5 +1,17 @@
-[2023-11-01 13:46:15,502] DEBUG in enrollments.pro: Select * from classes where ClassId = 4
-[2023-11-01 13:46:15,503] DEBUG in enrollments.pro: SELECT
+[2023-11-04 21:29:13,600] DEBUG in enrollments.pro: 
+                         SELECT 
+                         ClassId,
+                         CourseCode,
+                         SectionNumber,
+                         ClassName,                         
+                         InstructorName,
+                         CurrentEnrollment,
+                         MaxEnrollment
+                         FROM classes 
+                         WHERE CurrentEnrollment < MaxEnrollment 
+                         AND AutomaticEnrollmentFrozen = 0
+[2023-11-04 21:32:47,551] DEBUG in enrollments.pro: Select * from classes where ClassId = 4
+[2023-11-04 21:32:47,551] DEBUG in enrollments.pro: SELECT
                      WaitingLists.StudentName as student_name,
                      Classes.CourseCode || ' - ' || Classes.SectionNumber as class_section,
                      Classes.ClassName as class_name,
@@ -12,3 +24,30 @@
 
                      WHERE WaitingLists.StudentUserName = 'student5' 
                      and WaitingLists.ClassId= 4
+[2023-11-04 21:37:47,928] DEBUG in enrollments.pro: SELECT classname,currentenrollment FROM Classes WHERE InstructorUserName = 'instructor1'
+[2023-11-04 21:41:17,482] DEBUG in enrollments.pro: Select * from classes where ClassId = 4
+[2023-11-04 21:41:17,483] DEBUG in enrollments.pro: SELECT 
+                     WaitListId,
+                     StudentName as student_name,
+                     ClassId,
+                     WaitingListPos,
+                     DateAdded
+                     FROM WaitingLists 
+                     WHERE ClassId = 4
+[2023-11-04 21:42:06,270] DEBUG in enrollments.pro: Select * from classes where ClassId = 4
+[2023-11-04 21:42:06,270] DEBUG in enrollments.pro: SELECT 
+                     WaitListId,
+                     StudentName as student_name,
+                     ClassId,
+                     WaitingListPos,
+                     DateAdded
+                     FROM WaitingLists 
+                     WHERE ClassId = 4
+[2023-11-04 21:45:48,836] DEBUG in enrollments.pro: Select * from classes where ClassId = 4
+[2023-11-04 21:45:48,836] DEBUG in enrollments.pro: 
+                     SELECT
+                     StudentName as student_name
+                     FROM Enrollments
+                     WHERE ClassId = 4
+                     AND Dropped = 1
+                     

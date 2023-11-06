@@ -1,9 +1,13 @@
-# CPSC 449 - Project 1
+# CPSC 449 - Project 2
 
-## Back-end Web Service to manage course enrollment and waiting lists with functionality similar to CSUF TitanOnline using FastAPI.
+## Enrollments Service to manage course enrollment and waiting lists with functionality similar to CSUF TitanOnline using FastAPI.
+
+## Users Service is a new user authentication service with read replication, and then implementing authentication using JWT and load balancing through an API gateway
 
 ## REST API ENDPOINTS
 ### Available REST API endpoints for the project
+
+## Enrollments Service
 <img src="img\endpoints.png" alt="not found" width="80%">
 
 </br>
@@ -26,18 +30,30 @@ Allow Registrar to:
 * Remove existing sections
 * Change the instructor for a section
 * Freeze automatic enrollment from waiting lists (e.g. during the second week of classes)
+
+## Users Service
+<img src="users/img/endpoints.png" alt="not found" width="80%">
+
+</br>
   
+Allow Users to:
+* Register a new user
+* Check a user's password
+
 ## Installation
 1. Clone this project
 2. Install dependencies using "pip install -r requirements.txt"
 3. Run database seed script (pro_db.py) using "python pro_db.py"
 
 ## Run this project
-On Windows/Mac (using uvicorn)
-1. Run this command "uvicorn pro:app --reload"
    
 On Linux (using foreman)
 1. Install Foreman</br>
+```
    sudo apt update </br>
    sudo apt install --yes ruby-foreman </br>
-2. Run this command "foreman start"
+```
+2. Run this command
+```
+foreman start -m primary=1,enrollments=3,krakend=1,secondary_1=1,secondary_2=1
+```
