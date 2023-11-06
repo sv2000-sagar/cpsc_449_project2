@@ -1,11 +1,11 @@
-users/secondary_1/fuse/*
-users/secondary_1/data/*
-!users/secondary_1/fuse/.gitkeep
-!users/secondary_1/data/.gitkeep
+users/var/secondary_1/fuse/*
+users/var/secondary_1/data/*
+!users/var/secondary_1/fuse/.gitkeep
+!users/var/secondary_1/data/.gitkeep
 
-users/secondary_2/fuse/*
-users/secondary_2/data/*
-!users/secondary_2/fuse/.gitkeep
-!users/secondary_2/data/.gitkeep
+users/var/secondary_2/fuse/*
+users/var/secondary_2/data/*
+!users/var/secondary_2/fuse/.gitkeep
+!users/var/secondary_2/data/.gitkeep
 
 

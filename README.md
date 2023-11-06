@@ -48,10 +48,10 @@ Allow Users to:
 ## Run this project
    
 On Linux (using foreman)
-1. Install Foreman</br>
+1. Install Foreman
 ```
-   sudo apt update </br>
-   sudo apt install --yes ruby-foreman </br>
+   sudo apt update 
+   sudo apt install --yes ruby-foreman 
 ```
 2. Run this command
 ```
